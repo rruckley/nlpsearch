@@ -3,6 +3,7 @@
 from flask import Flask
 from flask import request
 import json
+import re
 
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -56,7 +57,8 @@ def extract_information(tree):
         if type(leaf) is tuple:
             (value,pos) = leaf
             ## print(pos,':',value)
-            if pos == "VB":
+            ## Use regular expressions to catch all varients of verbs
+            if re.match(r'VB.?',pos):   
                 verb = value
             if pos == "NN" or pos == "NNS":
                 noun = value
