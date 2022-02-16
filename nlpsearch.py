@@ -8,9 +8,15 @@ import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
+from nltk.tree import Tree
 
 app = Flask(__name__)
 
+## TODO: Take output verbs / action words and run them over a list of available actions (e.g. DB query)
+## TODO: Handle multi-sentence input
+## TODO: Improve grammer for chunking
+
+## Extract Named entities
 def extract_ne(sent):
     words = word_tokenize(sent,language="english")
     tags = nltk.pos_tag(words)
@@ -21,32 +27,73 @@ def extract_ne(sent):
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
-def process_content(sent):
+# Process query string
+def process_query(sent):
     try:
-        words = nltk.word_tokenize(sent)
-        filtered = [w for w in words if not w in stop_words]
-        fixed = [lemmatizer.lemmatize(w) for w in filtered ]
-        tagged = nltk.pos_tag(fixed)
+        words = nltk.word_tokenize(sent,language="english")
+        # Remove stop words
+        ## filtered = [w for w in words if not w in stop_words]
+        ## fixed = [lemmatizer.lemmatize(w) for w in words ]
+        tagged = nltk.pos_tag(words)
         tree = nltk.ne_chunk(tagged,binary=True)
+        ## Simplistic grammer, could be improved
         chunkGram = r"""Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}"""
         chunkParser = nltk.RegexpParser(chunkGram)
         chunked = chunkParser.parse(tree)
-        return chunked
+        ## print(tree)
+        return tree
     except Exception as e:
         print(str(e))
 
+def extract_information(tree):
+    entity = ""
+    verb = ""
+    noun = ""
+    adjective = ""
+    qs = request.args.get('q')
+    tree = process_query(qs)
+    for leaf in tree:
+        if type(leaf) is tuple:
+            (value,pos) = leaf
+            ## print(pos,':',value)
+            if pos == "VB":
+                verb = value
+            if pos == "NN" or pos == "NNS":
+                noun = value
+            if pos == "JJ" or pos == "JJS":
+                adjective = value
+        if type(leaf) == Tree:
+            ## print(leaf.label())
+            if leaf.label() == 'NE': 
+                for j in leaf:
+                    (a,b) = j
+                    entity += a + " "
+                    ## print(b,':',a)
+    jsonOutput = "{}"
+    jsonObj = json.loads(jsonOutput)
+    jsonObj["entity"] = entity
+    jsonObj["verb"] = verb
+    jsonObj["noun"] = noun
+    jsonObj["adjective"] = adjective
+    return jsonObj
+
+## Sample sentences
 ##sent = "I want to open a new ticket for Router01"
 ##sent = "Show me the performance graph for our Sydney office"
-#sent = "I want to look up the list of services we have in New South Wales"
+##sent = "I want to look up the list of services we have in New South Wales"
 ##sent = "Show me the bandwidth graph for Newcastle Warehouse"
-#sent = "I need to raise a ticket about the performance issues we've been having at the Lane Cove office"
-#sent = "please create an incident for the Belrose site. It has a performance issue."
-#sent = "open the ticket OBCS234983"
+##sent = "I need to raise a ticket about the performance issues we've been having at the Lane Cove office"
+##sent = "please create an incident for the Belrose site. It has a performance issue."
+##sent = "open the ticket OBCS234983"
 
+
+## For now we assume only a single sentence as input.
 @app.route('/')
 def root():
     qs = request.args.get('q')
-    return json.dumps(process_content(qs))
+    tree = process_query(qs)
+    jsonObj = extract_information(tree)
+    return json.dumps(jsonObj)
 
 if __name__ == '__main__':
     app.run()
