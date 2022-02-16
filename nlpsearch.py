@@ -39,9 +39,9 @@ def process_query(sent):
         tagged = nltk.pos_tag(fixed)
         tree = nltk.ne_chunk(tagged,binary=True)
         ## Simplistic grammer, could be improved
-        chunk_gram = r"""Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}"""
-        chunk_parser = nltk.RegexpParser(chunk_gram)
-        chunked = chunk_parser.parse(tree)
+        ## chunk_gram = r"""Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}"""
+        ## chunk_parser = nltk.RegexpParser(chunk_gram)
+        ## chunked = chunk_parser.parse(tree)
         ## print(tree)
         return tree
     except Exception as exception:
@@ -52,26 +52,27 @@ def extract_information(tree):
     verb = ""
     noun = []
     adjective = ""
-    qs = request.args.get('q')
-    tree = process_query(qs)
+    query_string = request.args.get('q')
+    tree = process_query(query_string)
     for leaf in tree:
-        if type(leaf) is tuple:
+        if isinstance(leaf,tuple):
             (value,pos) = leaf
             ## print(pos,':',value)
             ## Use regular expressions to catch all varients of verbs
             if re.match(r'VB.?',pos):
                 verb = value
-            if pos == "NN" or pos == "NNS":
+            if pos in ('NN','NNS'):
                 noun.append(value)
-            if pos == "JJ" or pos == "JJS":
+            if pos in ('JJ','JJS'):
                 adjective = value
-        if type(leaf) == Tree:
+        if isinstance(leaf,Tree):
             ## print(leaf.label())
             if leaf.label() == 'NE':
                 for j in leaf:
                     (value,pos) = j
                     entity += value + " "
                     ## print(pos,':',value)
+    ## Generate JSON object for output
     json_output = "{}"
     json_obj = json.loads(json_output)
     json_obj["entity"] = entity
