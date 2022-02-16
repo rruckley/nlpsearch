@@ -13,14 +13,9 @@ from flask import request
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
-from nltk.corpus import stopwords
 from nltk.tree import Tree
 
 app = Flask(__name__)
-
-## TODO: Take output verbs / action words and run them over a list of available actions
-## TODO: Handle multi-sentence input
-## TODO: Improve grammer for chunking
 
 ## Extract Named entities
 def extract_ne(sent):
@@ -40,22 +35,19 @@ def process_query(sent):
         Perform Part of Speech tagging
         Look for named entities
     """
-    try:
-        lemmatizer = WordNetLemmatizer()
-        words = nltk.word_tokenize(sent,language="english")
-        # Remove stop words
-        ## filtered = [w for w in words if not w in stop_words]
-        fixed = [lemmatizer.lemmatize(w) for w in words ]
-        tagged = nltk.pos_tag(fixed)
-        tree = nltk.ne_chunk(tagged,binary=True)
-        ## Simplistic grammer, could be improved
-        ## chunk_gram = r"""Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}"""
-        ## chunk_parser = nltk.RegexpParser(chunk_gram)
-        ## chunked = chunk_parser.parse(tree)
-        ## print(tree)
-        return tree
-    except Exception as exception:
-        print(str(exception))
+    lemmatizer = WordNetLemmatizer()
+    words = nltk.word_tokenize(sent,language="english")
+    # Remove stop words
+    ## filtered = [w for w in words if not w in stop_words]
+    fixed = [lemmatizer.lemmatize(w) for w in words ]
+    tagged = nltk.pos_tag(fixed)
+    tree = nltk.ne_chunk(tagged,binary=True)
+    ## Simplistic grammer, could be improved
+    ## chunk_gram = r"""Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}"""
+    ## chunk_parser = nltk.RegexpParser(chunk_gram)
+    ## chunked = chunk_parser.parse(tree)
+    ## print(tree)
+    return tree
 
 def extract_information(tree):
     """
@@ -110,6 +102,9 @@ def extract_information(tree):
 ## For now we assume only a single sentence as input.
 @app.route('/')
 def root():
+    """
+        Primary entry method for nlpsearch, no other paths supported
+    """
     query_string = request.args.get('q')
     tree = process_query(query_string)
     json_obj = extract_information(tree)
