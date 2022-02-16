@@ -34,8 +34,8 @@ def process_query(sent):
         words = nltk.word_tokenize(sent,language="english")
         # Remove stop words
         ## filtered = [w for w in words if not w in stop_words]
-        ## fixed = [lemmatizer.lemmatize(w) for w in words ]
-        tagged = nltk.pos_tag(words)
+        fixed = [lemmatizer.lemmatize(w) for w in words ]
+        tagged = nltk.pos_tag(fixed)
         tree = nltk.ne_chunk(tagged,binary=True)
         ## Simplistic grammer, could be improved
         chunkGram = r"""Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}"""
@@ -49,7 +49,7 @@ def process_query(sent):
 def extract_information(tree):
     entity = ""
     verb = ""
-    noun = ""
+    noun = []
     adjective = ""
     qs = request.args.get('q')
     tree = process_query(qs)
@@ -61,7 +61,7 @@ def extract_information(tree):
             if re.match(r'VB.?',pos):   
                 verb = value
             if pos == "NN" or pos == "NNS":
-                noun = value
+                noun.append(value)
             if pos == "JJ" or pos == "JJS":
                 adjective = value
         if type(leaf) == Tree:
