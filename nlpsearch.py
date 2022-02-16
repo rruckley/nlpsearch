@@ -1,5 +1,9 @@
 #!/usr/bin/python3
-
+"""
+    Module to perform naturnal language searching as a micro-service
+    Uses Flask for API
+    Uses NLTK for NLP processing
+"""
 import json
 import re
 
@@ -20,18 +24,24 @@ app = Flask(__name__)
 
 ## Extract Named entities
 def extract_ne(sent):
+    """
+    Standalone function to extract named entities from a given un-tokenised sentence
+    Returns token tree
+    """
     words = word_tokenize(sent,language="english")
     tags = nltk.pos_tag(words)
     tree = nltk.ne_chunk(tags,binary=True)
     return tree
 
-# nltk.download('omw-1.4')
-lemmatizer = WordNetLemmatizer()
-stop_words = set(stopwords.words('english'))
-
 # Process query string
 def process_query(sent):
+    """
+        Parse given sentence into tokens
+        Perform Part of Speech tagging
+        Look for named entities
+    """
     try:
+        lemmatizer = WordNetLemmatizer()
         words = nltk.word_tokenize(sent,language="english")
         # Remove stop words
         ## filtered = [w for w in words if not w in stop_words]
@@ -48,6 +58,10 @@ def process_query(sent):
         print(str(exception))
 
 def extract_information(tree):
+    """
+        Extract information from the resulting tagged token tree
+        Pull out verbs,noun(s),adjective and named entities
+    """
     entity = ""
     verb = ""
     noun = []
@@ -89,6 +103,8 @@ def extract_information(tree):
 ##sent = "I need to raise a ticket about the performance issues at the Lane Cove office"
 ##sent = "please create an incident for the Belrose site. It has a performance issue."
 ##sent = "open the ticket OBCS234983"
+
+
 
 
 ## For now we assume only a single sentence as input.
