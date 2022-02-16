@@ -1,19 +1,20 @@
 #!/usr/bin/python3
 
-from flask import Flask
-from flask import request
 import json
 import re
 
+from flask import Flask
+from flask import request
+
 import nltk
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 from nltk.tree import Tree
 
 app = Flask(__name__)
 
-## TODO: Take output verbs / action words and run them over a list of available actions (e.g. DB query)
+## TODO: Take output verbs / action words and run them over a list of available actions
 ## TODO: Handle multi-sentence input
 ## TODO: Improve grammer for chunking
 
@@ -38,13 +39,13 @@ def process_query(sent):
         tagged = nltk.pos_tag(fixed)
         tree = nltk.ne_chunk(tagged,binary=True)
         ## Simplistic grammer, could be improved
-        chunkGram = r"""Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}"""
-        chunkParser = nltk.RegexpParser(chunkGram)
-        chunked = chunkParser.parse(tree)
+        chunk_gram = r"""Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}"""
+        chunk_parser = nltk.RegexpParser(chunk_gram)
+        chunked = chunk_parser.parse(tree)
         ## print(tree)
         return tree
-    except Exception as e:
-        print(str(e))
+    except Exception as exception:
+        print(str(exception))
 
 def extract_information(tree):
     entity = ""
@@ -58,7 +59,7 @@ def extract_information(tree):
             (value,pos) = leaf
             ## print(pos,':',value)
             ## Use regular expressions to catch all varients of verbs
-            if re.match(r'VB.?',pos):   
+            if re.match(r'VB.?',pos):
                 verb = value
             if pos == "NN" or pos == "NNS":
                 noun.append(value)
@@ -66,25 +67,25 @@ def extract_information(tree):
                 adjective = value
         if type(leaf) == Tree:
             ## print(leaf.label())
-            if leaf.label() == 'NE': 
+            if leaf.label() == 'NE':
                 for j in leaf:
-                    (a,b) = j
-                    entity += a + " "
-                    ## print(b,':',a)
-    jsonOutput = "{}"
-    jsonObj = json.loads(jsonOutput)
-    jsonObj["entity"] = entity
-    jsonObj["verb"] = verb
-    jsonObj["noun"] = noun
-    jsonObj["adjective"] = adjective
-    return jsonObj
+                    (value,pos) = j
+                    entity += value + " "
+                    ## print(pos,':',value)
+    json_output = "{}"
+    json_obj = json.loads(json_output)
+    json_obj["entity"] = entity
+    json_obj["verb"] = verb
+    json_obj["noun"] = noun
+    json_obj["adjective"] = adjective
+    return json_obj
 
 ## Sample sentences
 ##sent = "I want to open a new ticket for Router01"
 ##sent = "Show me the performance graph for our Sydney office"
 ##sent = "I want to look up the list of services we have in New South Wales"
 ##sent = "Show me the bandwidth graph for Newcastle Warehouse"
-##sent = "I need to raise a ticket about the performance issues we've been having at the Lane Cove office"
+##sent = "I need to raise a ticket about the performance issues at the Lane Cove office"
 ##sent = "please create an incident for the Belrose site. It has a performance issue."
 ##sent = "open the ticket OBCS234983"
 
@@ -92,10 +93,10 @@ def extract_information(tree):
 ## For now we assume only a single sentence as input.
 @app.route('/')
 def root():
-    qs = request.args.get('q')
-    tree = process_query(qs)
-    jsonObj = extract_information(tree)
-    return json.dumps(jsonObj)
+    query_string = request.args.get('q')
+    tree = process_query(query_string)
+    json_obj = extract_information(tree)
+    return json.dumps(json_obj)
 
 if __name__ == '__main__':
     app.run()
